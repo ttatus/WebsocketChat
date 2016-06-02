@@ -1,46 +1,64 @@
 <!DOCTYPE html>
 <html>
 <body>
-<h1>Chat</h1>
+<h1>Chat with cats</h1>
 <div id="chat"></div>
 <input id="msg" type="text">
+<div id="cats"></div>
 <style>
-input { border: 1px solid green; }
+    input { border: 1px solid green; }
+    img { width: 50px; height: 50px; }
+    #cats {margin: 10px 5px; }
+    div#cats > div { float: left; }
 </style>
+
 <script>
+    var chat = document.getElementById('chat'),
+            msg = document.getElementById('msg'),
+            cats = document.getElementById('cats');
 
-  var chat = document.getElementById('chat'),
-      msg = document.getElementById('msg');
-  msg.focus();
+    msg.focus();
+    msg.addEventListener('keydown', function(event) {
+        if (event.keyCode === 13) {
+            var s = msg.value;
+            msg.value = '';
+            writeLine(s);
+            socket.send(s);
+        }
+    });
 
-  msg.addEventListener('keydown', function(event) {
-    if (event.keyCode === 13) {
-      var s = msg.value;
-      msg.value = '';
-      writeLine(s);
-      socket.send(s);
+    [1,2,3,4,5].forEach(function(item) {
+        var newImg = document.createElement('div');
+        newImg.innerHTML = `<img src=\"images/${item}.jpg\" onclick=\"sendCat(\'${item}\')\"/>`;
+        cats.appendChild(newImg);
+    });
+
+    function writeLine(text) {
+        var line = document.createElement('div');
+        var catRegex = /\((\d)\)/g;
+        text.match(catRegex);
+        line.innerHTML = '<p>' + text.replace(catRegex, `<img src=\"images/$1.jpg\"/>`) + '</p>';
+        chat.appendChild(line);
     }
-  });
 
-  function writeLine(text) {
-    var line = document.createElement('div');
-    line.innerHTML = '<p>' + text + '</p>';
-    chat.appendChild(line);
-  }
+    function sendCat(catNumber) {
+        var cat = `(${catNumber})`;
+        writeLine(cat);
+        socket.send(cat);
+    }
 
-  var socket = new WebSocket('ws://127.0.0.1/chat');
+    var socket = new WebSocket('ws://127.0.0.1/chat');
+    socket.onopen = function() {
+        writeLine('connected');
+    };
 
-  socket.onopen = function() {
-    writeLine('connected');
-  };
+    socket.onclose = function() {
+        writeLine('closed');
+    };
 
-  socket.onclose = function() {
-    writeLine('closed');
-  };
-
-  socket.onmessage = function(event) {
-    writeLine(event.data);
-  };
+    socket.onmessage = function(event) {
+        writeLine(event.data);
+    };
 
 </script>
 </body>
